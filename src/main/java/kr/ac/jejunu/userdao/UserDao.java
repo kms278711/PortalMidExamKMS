@@ -11,22 +11,42 @@ public class UserDao {
     }
 
     public User get(Integer id) throws ClassNotFoundException, SQLException {
-        StatementStrategy statementStrategy = new GetStatementStrategy(id);
-        return jdbcContext.JdbcContextForGet(statementStrategy);
+        return jdbcContext.JdbcContextForGet(connection -> {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("select * from userinfo where id = ?");
+            preparedStatement.setInt(1, id);
+            return preparedStatement;
+        });
     }
 
     public void insert(User user) throws SQLException, ClassNotFoundException {
-        StatementStrategy statementStrategy = new InsertStatementStrategy(user);
-        jdbcContext.JdbcContextForInsert(statementStrategy, user);
+        jdbcContext.JdbcContextForInsert(connection -> {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("insert into userinfo(name, password) values(?,?)", Statement.RETURN_GENERATED_KEYS);
+            preparedStatement.setString(1, user.getName());
+            preparedStatement.setString(2, user.getPassword());
+
+            return preparedStatement;
+        }, user);
     }
 
     public void update(User user) throws SQLException, ClassNotFoundException {
-        StatementStrategy statementStrategy = new UpdateStatementStrategy(user);
-        jdbcContext.JdbcContextForUpdate(statementStrategy);
+        jdbcContext.JdbcContextForUpdate(connection -> {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("update userinfo set name=?,password=? where id=?");
+            preparedStatement.setString(1, user.getName());
+            preparedStatement.setString(2, user.getPassword());
+            preparedStatement.setInt(3, user.getId());
+            return preparedStatement;
+        });
     }
 
     public void delete(Integer id) throws SQLException, ClassNotFoundException {
-        StatementStrategy statementStrategy = new DeleteStatementStrategy(id);
-        jdbcContext.JdbcContextForDelete(statementStrategy);
+        jdbcContext.JdbcContextForDelete(connection -> {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("delete from userinfo where id=?");
+            preparedStatement.setInt(1, id);
+            return preparedStatement;
+        });
     }
 }
