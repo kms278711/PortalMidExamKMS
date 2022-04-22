@@ -1,10 +1,7 @@
 package kr.ac.jejunu.userdao;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
 public class JdbcContext {
     private final DataSource dataSource;
@@ -106,26 +103,36 @@ public class JdbcContext {
         }
     }
 
-    public void JdbcContextForDelete(StatementStrategy statementStrategy) throws SQLException {
-        Connection connection = null;
-        PreparedStatement preparedStatement = null;
-        try{
-            connection = dataSource.getConnection();
-
-            preparedStatement = statementStrategy.makeStatement(connection);
-
-            preparedStatement.executeUpdate();
-        } finally {
-            try{
-                preparedStatement.close();
-            } catch (Exception e) {
-                e.printStackTrace();
+    public User get(String sql, Object[] params) throws SQLException {
+        return JdbcContextForGet(connection -> {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement(sql);
+            for(int i=0; i< params.length; i++) {
+                preparedStatement.setObject(i+1, params[i]);
             }
-            try{
-                connection.close();
-            } catch (Exception e) {
-                e.printStackTrace();
+            return preparedStatement;
+        });
+    }
+
+    public void insert(String sql, Object[] params, User user) throws SQLException {
+        JdbcContextForInsert(connection -> {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            for(int i=0; i< params.length; i++) {
+                preparedStatement.setObject(i+1, params[i]);
             }
-        }
+            return preparedStatement;
+        }, user);
+    }
+
+    public void update(String sql, Object[] params) throws SQLException {
+        JdbcContextForUpdate(connection -> {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement(sql);
+            for(int i=0; i< params.length; i++) {
+                preparedStatement.setObject(i+1, params[i]);
+            }
+            return preparedStatement;
+        });
     }
 }
